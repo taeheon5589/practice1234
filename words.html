@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>단어 학습</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #efe6d6;
+        --ink: #1c1915;
+        --muted: #5c5348;
+        --panel: #fffaf3;
+        --line: #e3d7c6;
+        --user: #1f5c45;
+        --user-ink: #f4fff9;
+        --accent: #1f5c45;
+        --tip: #6a3d12;
+        --bad: #8c2f2f;
+        --focus: #0d4f8b;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { margin: 0; min-height: 100%; }
+
+      body {
+        font-family: Palatino, "Apple SD Gothic Neo", "Noto Sans KR", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, #fff8ec 0%, transparent 36%),
+          var(--bg);
+      }
+
+      button, input { font: inherit; color: inherit; }
+
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+
+      header, .topics, .meter, #stage, .panel, .status, .keys {
+        width: min(760px, calc(100% - 24px));
+        margin-inline: auto;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-end;
+        padding: 22px 0 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+        letter-spacing: -0.03em;
+      }
+
+      h2 { margin: 0 0 10px; font-size: 1.25rem; }
+      header p, .lead { margin: 4px 0 0; color: var(--muted); }
+      header a { color: var(--accent); font-weight: 700; }
+
+      .header-actions, .topics, .actions, .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        min-height: 44px;
+        border: 2px solid var(--ink);
+        background: transparent;
+        border-radius: 999px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+
+      button:hover { background: #fff; }
+      button:disabled { cursor: default; opacity: 1; }
+
+      button[aria-pressed="true"],
+      button.primary {
+        background: var(--accent);
+        color: var(--user-ink);
+        border-color: var(--accent);
+      }
+
+      button.good, button.good:hover {
+        background: var(--accent);
+        color: var(--user-ink);
+        border-color: var(--accent);
+      }
+
+      button.bad, button.bad:hover {
+        background: var(--bad);
+        color: #fff;
+        border-color: var(--bad);
+      }
+
+      .topics { padding-bottom: 10px; }
+
+      .meter {
+        height: 8px;
+        margin-bottom: 8px;
+        border-radius: 99px;
+        background: #e3d7c6;
+        overflow: hidden;
+      }
+
+      .meter span {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        width: 0;
+      }
+
+      .status, .keys { min-height: 1.4em; color: var(--muted); }
+      .keys { margin-top: 0; margin-bottom: 14px; }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 26px 22px 22px;
+        min-height: 340px;
+        box-shadow: 0 16px 40px rgba(70, 46, 18, 0.06);
+      }
+
+      .eyebrow, .pos, .meaning, .word { text-align: center; }
+      .eyebrow { margin: 0; color: var(--muted); }
+      .word {
+        margin: 12px 0 0;
+        font-size: clamp(2.1rem, 6vw, 3.3rem);
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+      }
+      .pos { margin: 8px 0 0; color: var(--muted); }
+      .meaning { margin: 18px 0 0; font-size: 1.45rem; }
+
+      .example {
+        margin: 16px 0 0;
+        padding: 12px 14px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        line-height: 1.45;
+      }
+
+      .example span { display: block; margin-top: 4px; color: var(--muted); }
+      .card .lead { text-align: center; }
+      .actions { justify-content: center; margin-top: 22px; }
+      .prompt { margin: 8px 0 4px; text-align: center; font-size: 1.7rem; }
+
+      .choices { margin-top: 12px; }
+      .choices button, .spell input {
+        width: 100%;
+        border-radius: 16px;
+        text-align: left;
+      }
+
+      .choices button { margin-top: 8px; }
+
+      .spell input, .fields input {
+        display: block;
+        width: 100%;
+        min-height: 52px;
+        margin-top: 6px;
+        border: 2px solid var(--ink);
+        border-radius: 16px;
+        background: #fff;
+        padding: 10px 14px;
+      }
+
+      .spell input { font-size: 1.35rem; text-align: center; }
+      .ok { color: var(--accent); font-weight: 700; text-align: center; }
+      .no { color: var(--bad); font-weight: 700; text-align: center; }
+
+      .panel {
+        margin-top: 14px;
+        margin-bottom: 28px;
+        padding: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+      }
+
+      .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      label { display: block; color: var(--muted); font-size: 0.95rem; }
+      .wide { grid-column: 1 / -1; }
+      .fields button, .panel > button { margin-top: 10px; }
+
+      .wordbook, .mine { list-style: none; margin: 10px 0 0; padding: 0; }
+
+      .wordbook li, .mine li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .wordbook button, .mine button { min-height: 36px; padding: 4px 10px; }
+      .wb-main { flex: 1; min-width: 0; }
+      .wb-ko { color: var(--muted); margin-left: 8px; }
+
+      details summary {
+        cursor: pointer;
+        font-weight: 700;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+
+      :focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 640px) {
+        h1 { font-size: 1.7rem; }
+        header { flex-direction: column; align-items: stretch; }
+        .fields { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>단어 학습</h1>
+        <p>뜻을 떠올리고, 고르고, 직접 써 보며 외웁니다. <a href="index.html">영어 대화</a></p>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="voice" aria-pressed="false">발음 듣기</button>
+        <button type="button" id="mix" aria-pressed="false">외운 단어 섞기</button>
+        <button type="button" id="fresh">새 세트</button>
+      </div>
+    </header>
+
+    <div class="topics" id="decks" role="group" aria-label="단어 묶음"></div>
+    <div class="topics" id="modes" role="group" aria-label="학습 방식">
+      <button type="button" data-mode="card">카드</button>
+      <button type="button" data-mode="quiz">뜻 고르기</button>
+      <button type="button" data-mode="spell">철자</button>
+    </div>
+
+    <div class="meter" id="meter" role="progressbar" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-label="이 묶음에서 외운 비율">
+      <span id="meter-bar"></span>
+    </div>
+    <p id="stats" class="status"></p>
+    <main id="stage" aria-live="polite"></main>
+    <p id="keys" class="keys"></p>
+    <p id="status" class="status" role="status"></p>
+    <p id="live" class="sr" aria-live="polite"></p>
+
+    <section class="panel">
+      <h2>내 단어 추가</h2>
+      <p class="lead">추가한 단어는 이 브라우저에만 저장됩니다.</p>
+      <form id="add-form">
+        <div class="fields">
+          <label>영어
+            <input id="add-en" maxlength="40" autocomplete="off" required />
+          </label>
+          <label>뜻
+            <input id="add-ko" maxlength="40" autocomplete="off" required />
+          </label>
+          <label class="wide">예문, 선택
+            <input id="add-ex" maxlength="120" autocomplete="off" />
+          </label>
+        </div>
+        <button type="submit" class="primary">단어 추가</button>
+      </form>
+      <ul id="mine" class="mine"></ul>
+      <button type="button" id="clear">이 묶음의 외운 표시 지우기</button>
+
+      <details>
+        <summary>단어장 펼치기</summary>
+        <ul id="wordbook" class="wordbook"></ul>
+      </details>
+    </section>
+
+    <script>
+      const BUILTIN = [
+        ["daily", "routine", "일상 루틴", "명사", "A short walk is part of my morning routine.", "짧은 산책이 아침 루틴의 일부입니다."],
+        ["daily", "commute", "통근", "명사", "My commute takes forty minutes.", "통근에 40분이 걸립니다."],
+        ["daily", "errand", "볼일", "명사", "I have a few errands after work.", "퇴근 후에 볼일이 몇 가지 있습니다."],
+        ["daily", "neighbor", "이웃", "명사", "My neighbor watered the plants.", "이웃이 화분에 물을 줬습니다."],
+        ["daily", "appointment", "예약, 약속", "명사", "I have a dentist appointment at three.", "3시에 치과 예약이 있습니다."],
+        ["daily", "laundry", "빨래", "명사", "I should do the laundry tonight.", "오늘 밤에 빨래를 해야 합니다."],
+        ["daily", "groceries", "식료품", "명사", "We buy groceries on Sunday.", "우리는 일요일에 식료품을 삽니다."],
+        ["daily", "weekday", "평일", "명사", "I am busy on weekdays.", "평일에는 바쁩니다."],
+        ["daily", "alarm", "알람", "명사", "My alarm goes off at seven.", "알람이 7시에 울립니다."],
+        ["daily", "chore", "집안일", "명사", "I share the chores with my family.", "집안일은 가족과 나눕니다."],
+        ["food", "appetite", "식욕", "명사", "I lost my appetite.", "식욕이 사라졌습니다."],
+        ["food", "recipe", "요리법", "명사", "This recipe is simple.", "이 요리법은 간단합니다."],
+        ["food", "ingredient", "재료", "명사", "Salt is a basic ingredient.", "소금은 기본 재료입니다."],
+        ["food", "spicy", "매운", "형용사", "This soup is too spicy for me.", "이 수프는 내게 너무 맵습니다."],
+        ["food", "dessert", "디저트", "명사", "We had fruit for dessert.", "디저트로 과일을 먹었습니다."],
+        ["food", "leftover", "남은 음식", "명사", "We ate the leftovers for lunch.", "점심으로 남은 음식을 먹었습니다."],
+        ["food", "crispy", "바삭한", "형용사", "The chicken skin is crispy.", "치킨 껍질이 바삭합니다."],
+        ["food", "bland", "싱거운", "형용사", "The soup tastes bland without salt.", "소금이 없으면 수프가 싱겁습니다."],
+        ["food", "portion", "1인분", "명사", "The portion was too big.", "1인분이 너무 많았습니다."],
+        ["food", "simmer", "약불에 끓이다", "동사", "Simmer the sauce for ten minutes.", "소스를 10분 동안 약불에 끓이세요."],
+        ["travel", "itinerary", "여행 일정", "명사", "Our itinerary includes two museums.", "여행 일정에 박물관 두 곳이 있습니다."],
+        ["travel", "luggage", "짐", "명사", "My luggage is still at the airport.", "짐이 아직 공항에 있습니다."],
+        ["travel", "passport", "여권", "명사", "Keep your passport in a safe place.", "여권은 안전한 곳에 두세요."],
+        ["travel", "destination", "목적지", "명사", "Paris is our first destination.", "파리가 첫 목적지입니다."],
+        ["travel", "souvenir", "기념품", "명사", "I bought a small souvenir.", "작은 기념품을 샀습니다."],
+        ["travel", "reservation", "예약", "명사", "We have a reservation for dinner.", "저녁 식사 예약이 있습니다."],
+        ["travel", "delay", "지연", "명사", "The delay was thirty minutes.", "지연은 30분이었습니다."],
+        ["travel", "customs", "세관", "명사", "We waited in line at customs.", "세관에서 줄을 서서 기다렸습니다."],
+        ["travel", "sightseeing", "관광", "명사", "We spent the day sightseeing.", "하루를 관광하며 보냈습니다."],
+        ["travel", "aisle", "통로", "명사", "I prefer an aisle seat.", "저는 통로 쪽 좌석을 더 좋아합니다."],
+        ["feeling", "relieved", "안도하는", "형용사", "I was relieved after the test.", "시험이 끝난 뒤 안도했습니다."],
+        ["feeling", "anxious", "불안한", "형용사", "I feel anxious before a flight.", "비행 전에 불안합니다."],
+        ["feeling", "grateful", "고마워하는", "형용사", "I am grateful for your help.", "도와주셔서 고맙습니다."],
+        ["feeling", "frustrated", "답답한", "형용사", "I get frustrated when the wifi is slow.", "와이파이가 느리면 답답합니다."],
+        ["feeling", "confident", "자신 있는", "형용사", "She felt confident about the interview.", "그녀는 면접에 자신이 있었습니다."],
+        ["feeling", "overwhelmed", "감당이 안 되는", "형용사", "I felt overwhelmed by the news.", "그 소식을 감당하기 어려웠습니다."],
+        ["feeling", "curious", "궁금한", "형용사", "I am curious about that book.", "그 책이 궁금합니다."],
+        ["feeling", "proud", "뿌듯한", "형용사", "I am proud of my progress.", "제 진전이 뿌듯합니다."],
+        ["feeling", "homesick", "집이 그리운", "형용사", "I felt homesick on the first night.", "첫날 밤에는 집이 그리웠습니다."],
+        ["feeling", "calm", "차분한", "형용사", "A walk helps me stay calm.", "산책은 마음을 차분하게 해 줍니다."],
+        ["work", "deadline", "마감", "명사", "The deadline is Friday.", "마감은 금요일입니다."],
+        ["work", "feedback", "피드백", "명사", "Thank you for the clear feedback.", "분명한 피드백을 주셔서 감사합니다."],
+        ["work", "colleague", "동료", "명사", "A colleague shared her notes.", "동료가 노트를 나눠 줬습니다."],
+        ["work", "priority", "우선순위", "명사", "Sleep is my priority this week.", "이번 주 우선순위는 잠입니다."],
+        ["work", "draft", "초안", "명사", "This is only a draft.", "이것은 초안일 뿐입니다."],
+        ["work", "assignment", "과제", "명사", "The assignment is due tomorrow.", "과제는 내일까지입니다."],
+        ["work", "clarify", "분명히 하다", "동사", "Could you clarify the question?", "질문을 분명히 해 주시겠어요?"],
+        ["work", "postpone", "미루다", "동사", "We postponed the meeting.", "회의를 미뤘습니다."],
+        ["work", "attend", "참석하다", "동사", "Will you attend the class?", "수업에 참석할 건가요?"],
+        ["work", "estimate", "추정하다", "동사", "Can you estimate the cost?", "비용을 추정해 줄 수 있나요?"]
+      ].map(([deck, en, ko, pos, example, koExample]) => ({
+        id: deck + "-" + en,
+        deck,
+        en,
+        ko,
+        pos,
+        example,
+        koExample
+      }));
+
+      const DECKS = [
+        { id: "all", name: "전체" },
+        { id: "daily", name: "일상" },
+        { id: "food", name: "음식" },
+        { id: "travel", name: "여행" },
+        { id: "feeling", name: "감정" },
+        { id: "work", name: "일·공부" },
+        { id: "mine", name: "내 단어" }
+      ];
+
+      const STORAGE_KEY = "yeongdiri-words-v1";
+      const store = loadStore();
+      const round = {
+        queue: [],
+        index: 0,
+        correct: 0,
+        answered: 0,
+        phase: "ask",
+        choices: [],
+        picked: null,
+        hint: false,
+        spell: "",
+        spellOk: false
+      };
+      let spokenFor = "";
+
+      const stage = document.querySelector("#stage");
+      const stats = document.querySelector("#stats");
+      const keys = document.querySelector("#keys");
+      const status = document.querySelector("#status");
+      const live = document.querySelector("#live");
+      const meter = document.querySelector("#meter");
+      const meterBar = document.querySelector("#meter-bar");
+      const voiceBtn = document.querySelector("#voice");
+      const mixBtn = document.querySelector("#mix");
+      const deckBox = document.querySelector("#decks");
+      const modeBox = document.querySelector("#modes");
+
+      function loadStore() {
+        const empty = { known: {}, custom: [], voice: false, mix: false, deck: "all", mode: "card" };
+        try {
+          const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          const custom = Array.isArray(raw.custom) ? raw.custom.filter(validCustom) : [];
+          const known = raw.known && typeof raw.known === "object" ? raw.known : {};
+          const deck = DECKS.some((item) => item.id === raw.deck) ? raw.deck : "all";
+          const mode = ["card", "quiz", "spell"].includes(raw.mode) ? raw.mode : "card";
+          return {
+            known,
+            custom,
+            voice: raw.voice === true,
+            mix: raw.mix === true,
+            deck,
+            mode
+          };
+        } catch (error) {
+          return empty;
+        }
+      }
+
+      function validCustom(word) {
+        if (!word || typeof word.id !== "string" || typeof word.en !== "string" || typeof word.ko !== "string") {
+          return false;
+        }
+        word.deck = "mine";
+        word.pos = typeof word.pos === "string" && word.pos ? word.pos : "내 단어";
+        word.example = typeof word.example === "string" ? word.example : "";
+        word.koExample = typeof word.koExample === "string" ? word.koExample : "";
+        return true;
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            known: store.known,
+            custom: store.custom,
+            voice: store.voice,
+            mix: store.mix,
+            deck: store.deck,
+            mode: store.mode
+          }));
+        } catch (error) {
+          status.textContent = "이 브라우저에 기록을 저장하지 못했습니다.";
+        }
+      }
+
+      function allWords() {
+        return BUILTIN.concat(store.custom);
+      }
+
+      function wordsInDeck(deck) {
+        if (deck === "all") return allWords();
+        if (deck === "mine") return store.custom.slice();
+        return BUILTIN.filter((word) => word.deck === deck);
+      }
+
+      function deckName(id) {
+        const found = DECKS.find((item) => item.id === id);
+        return found ? found.name : "";
+      }
+
+      function shuffle(list) {
+        const copy = list.slice();
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const hold = copy[i];
+          copy[i] = copy[j];
+          copy[j] = hold;
+        }
+        return copy;
+      }
+
+      function norm(text) {
+        return text.trim().toLowerCase().replace(/\s+/g, " ");
+      }
+
+      function el(tag, props, children) {
+        const node = document.createElement(tag);
+        Object.entries(props || {}).forEach(([key, value]) => {
+          if (key === "class") node.className = value;
+          else if (key === "text") node.textContent = value == null ? "" : String(value);
+          else if (key === "click") node.addEventListener("click", value);
+          else if (key === "disabled") node.disabled = Boolean(value);
+          else if (key === "lang") {
+            node.lang = value;
+            if (value === "en") node.translate = false;
+          }
+          else if (value != null && value !== false) node.setAttribute(key, String(value));
+        });
+        (children || []).forEach((child) => {
+          if (child) node.append(child);
+        });
+        return node;
+      }
+
+      function setStatus(text) {
+        status.textContent = text;
+        live.textContent = "";
+        window.setTimeout(() => {
+          live.textContent = text;
+        }, 30);
+      }
+
+      function speak(text) {
+        if (!window.speechSynthesis || !text) return;
+        speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "en-US";
+        utter.rate = 0.92;
+        const voice = speechSynthesis
+          .getVoices()
+          .find((item) => item.lang.toLowerCase().replace(/_/g, "-").startsWith("en"));
+        if (voice) utter.voice = voice;
+        window.setTimeout(() => speechSynthesis.speak(utter), 40);
+      }
+
+      function current() {
+        while (round.index < round.queue.length) {
+          const found = allWords().find((word) => word.id === round.queue[round.index]);
+          if (found) return found;
+          round.index += 1;
+        }
+        if (round.phase !== "empty" && round.phase !== "mastered") round.phase = "done";
+        return null;
+      }
+
+      function prepareChoices() {
+        const word = current();
+        if (!word) return;
+        const same = allWords().filter((item) => item.id !== word.id && item.deck === word.deck);
+        const rest = allWords().filter((item) => item.id !== word.id && item.deck !== word.deck);
+        round.choices = shuffle(shuffle(same).concat(shuffle(rest)).slice(0, 3).concat(word));
+      }
+
+      function buildRound() {
+        const pool = wordsInDeck(store.deck);
+        round.correct = 0;
+        round.answered = 0;
+        round.index = 0;
+        round.phase = "ask";
+        round.choices = [];
+        round.picked = null;
+        round.hint = false;
+        round.spell = "";
+        round.spellOk = false;
+        spokenFor = "";
+        if (!pool.length) {
+          round.queue = [];
+          round.phase = "empty";
+          return;
+        }
+        let source = pool;
+        if (!store.mix) {
+          const fresh = pool.filter((word) => !store.known[word.id]);
+          if (!fresh.length) {
+            round.queue = [];
+            round.phase = "mastered";
+            return;
+          }
+          source = fresh;
+        }
+        const unknown = shuffle(source.filter((word) => !store.known[word.id]));
+        const known = shuffle(source.filter((word) => store.known[word.id]));
+        const size = Math.min(source.length, store.deck === "all" ? 12 : 10);
+        round.queue = unknown.concat(known).slice(0, size).map((word) => word.id);
+        if (store.mode === "quiz") prepareChoices();
+      }
+
+      function revealCard() {
+        if (store.mode !== "card" || round.phase !== "ask") return;
+        round.phase = "reveal";
+        render();
+      }
+
+      function pickChoice(id) {
+        if (store.mode !== "quiz" || round.phase !== "ask") return;
+        const word = current();
+        if (!word) return;
+        round.picked = id;
+        round.phase = "reveal";
+        setStatus(id === word.id ? word.en + ", 맞았습니다." : "정답은 " + word.en + "입니다.");
+        render();
+      }
+
+      function checkSpell(event) {
+        if (event) event.preventDefault();
+        if (store.mode !== "spell" || round.phase !== "ask") return;
+        const word = current();
+        const typed = round.spell.trim();
+        if (!word || !typed) {
+          setStatus("영어 단어를 입력해 주세요.");
+          return;
+        }
+        round.spellOk = norm(typed) === norm(word.en);
+        round.phase = "reveal";
+        setStatus(round.spellOk ? word.en + ", 맞았습니다." : "정답은 " + word.en + "입니다.");
+        render();
+      }
+
+      function grade(remembered) {
+        if (round.phase !== "reveal") return;
+        const word = current();
+        if (!word) return;
+        if (remembered) {
+          store.known[word.id] = Date.now();
+          round.correct += 1;
+          setStatus("다음 단어입니다.");
+        } else {
+          delete store.known[word.id];
+          const insertAt = Math.min(round.index + 3, round.queue.length);
+          round.queue.splice(insertAt, 0, word.id);
+          setStatus(word.en + " 단어는 조금 뒤에 다시 나옵니다.");
+        }
+        round.answered += 1;
+        round.index += 1;
+        round.picked = null;
+        round.hint = false;
+        round.spell = "";
+        round.phase = "ask";
+        save();
+        if (round.index >= round.queue.length) round.phase = "done";
+        else if (store.mode === "quiz") prepareChoices();
+        render();
+      }
+
+      function toggleKnown(word) {
+        if (store.known[word.id]) delete store.known[word.id];
+        else store.known[word.id] = Date.now();
+        save();
+        render();
+      }
+
+      function renderBars() {
+        deckBox.replaceChildren(...DECKS.map((deck) => {
+          const words = wordsInDeck(deck.id);
+          const known = words.filter((word) => store.known[word.id]).length;
+          const label = words.length ? deck.name + " " + known + "/" + words.length : deck.name;
+          return el("button", {
+            type: "button",
+            text: label,
+            "aria-pressed": String(store.deck === deck.id),
+            click: () => {
+              store.deck = deck.id;
+              save();
+              buildRound();
+              setStatus(deck.name + " 묶음입니다.");
+              render();
+            }
+          });
+        }));
+        modeBox.querySelectorAll("button").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.mode === store.mode));
+        });
+        voiceBtn.setAttribute("aria-pressed", String(store.voice));
+        mixBtn.setAttribute("aria-pressed", String(store.mix));
+      }
+
+      function renderMeter() {
+        const words = wordsInDeck(store.deck);
+        const known = words.filter((word) => store.known[word.id]).length;
+        const max = words.length || 1;
+        meter.max = max;
+        meter.setAttribute("aria-valuemax", String(words.length));
+        meter.setAttribute("aria-valuenow", String(known));
+        meterBar.style.width = (known / max) * 100 + "%";
+        const place = round.phase === "ask" || round.phase === "reveal"
+          ? " · 이번 카드 " + (round.index + 1) + "/" + round.queue.length
+          : "";
+        stats.textContent = "이 묶음에서 외운 단어 " + known + "/" + words.length + place;
+      }
+
+      function exampleBlock(word) {
+        if (!word.example) return null;
+        return el("div", { class: "example" }, [
+          el("div", { lang: "en", text: word.example }),
+          word.koExample ? el("span", { text: word.koExample }) : null
+        ]);
+      }
+
+      function listenButton(word) {
+        return el("button", {
+          type: "button",
+          text: "발음",
+          click: () => speak(word.en)
+        });
+      }
+
+      function renderStudy() {
+        const word = current();
+        if (!word) return renderEnd();
+        const eyebrow = el("p", {
+          class: "eyebrow",
+          text: deckName(word.deck) + " · " + (round.index + 1) + " / " + round.queue.length
+        });
+
+        if (store.mode === "card" && round.phase === "ask") {
+          keys.textContent = "Enter 또는 스페이스로 뜻을 봅니다. L 키로 발음을 듣습니다.";
+          return el("section", { class: "card" }, [
+            eyebrow,
+            el("h2", { class: "word", lang: "en", text: word.en }),
+            el("p", { class: "pos", text: word.pos }),
+            el("p", { class: "lead", text: "뜻을 떠올린 뒤 확인하세요." }),
+            el("div", { class: "actions" }, [
+              listenButton(word),
+              el("button", { type: "button", class: "primary", text: "뜻 보기", click: revealCard })
+            ])
+          ]);
+        }
+
+        if (store.mode === "card") {
+          keys.textContent = "← 다시 볼게요 · → 또는 Enter 알아요";
+          return el("section", { class: "card" }, [
+            eyebrow,
+            el("h2", { class: "word", lang: "en", text: word.en }),
+            el("p", { class: "pos", text: word.pos }),
+            el("p", { class: "meaning", text: word.ko }),
+            exampleBlock(word),
+            el("div", { class: "actions" }, [
+              listenButton(word),
+              el("button", { type: "button", text: "다시 볼게요", click: () => grade(false) }),
+              el("button", { type: "button", class: "primary", text: "알아요", click: () => grade(true) })
+            ])
+          ]);
+        }
+
+        if (store.mode === "quiz" && round.phase === "ask") {
+          keys.textContent = "숫자 1부터 4로 고를 수 있습니다.";
+          return el("section", { class: "card" }, [
+            eyebrow,
+            el("p", { class: "eyebrow", text: "이 뜻의 영어 단어는?" }),
+            el("p", { class: "prompt", text: word.ko }),
+            el("div", { class: "choices" }, round.choices.map((choice, index) => el("button", {
+              type: "button",
+              lang: "en",
+              text: (index + 1) + ". " + choice.en,
+              click: () => pickChoice(choice.id)
+            })))
+          ]);
+        }
+
+        if (store.mode === "quiz") {
+          keys.textContent = "Enter로 다음 단어로 갑니다.";
+          const picked = round.picked;
+          return el("section", { class: "card" }, [
+            eyebrow,
+            el("p", { class: "prompt", text: word.ko }),
+            el("div", { class: "choices" }, round.choices.map((choice) => {
+              const good = choice.id === word.id;
+              const bad = choice.id === picked && !good;
+              return el("button", {
+                type: "button",
+                lang: "en",
+                class: good ? "good" : bad ? "bad" : "",
+                disabled: true,
+                text: choice.en
+              });
+            })),
+            el("p", { class: picked === word.id ? "ok" : "no", text: picked === word.id ? "맞았어요." : "정답은 " + word.en }),
+            exampleBlock(word),
+            el("div", { class: "actions" }, [
+              listenButton(word),
+              el("button", { type: "button", class: "primary", text: "다음", click: () => grade(picked === word.id) })
+            ])
+          ]);
+        }
+
+        if (round.phase === "ask") {
+          keys.textContent = "Enter로 확인합니다.";
+          const form = el("form", { class: "spell", id: "spell-form" });
+          const input = el("input", {
+            id: "spell-input",
+            type: "text",
+            maxlength: "40",
+            autocomplete: "off",
+            autocapitalize: "off",
+            spellcheck: "false",
+            lang: "en",
+            "aria-label": "영어 철자"
+          });
+          input.value = round.spell;
+          input.addEventListener("input", () => {
+            round.spell = input.value;
+          });
+          form.addEventListener("submit", checkSpell);
+          form.append(
+            input,
+            el("div", { class: "actions" }, [
+              el("button", {
+                type: "button",
+                text: "첫 글자",
+                click: () => {
+                  round.hint = true;
+                  render();
+                }
+              }),
+              el("button", { type: "submit", class: "primary", text: "확인" })
+            ])
+          );
+          return el("section", { class: "card" }, [
+            eyebrow,
+            el("p", { class: "eyebrow", text: "이 뜻을 영어로 쓰세요." }),
+            el("p", { class: "prompt", text: word.ko }),
+            round.hint ? el("p", { class: "pos", lang: "en", text: hintText(word.en) }) : null,
+            form
+          ]);
+        }
+
+        keys.textContent = "Enter로 다음 단어로 갑니다.";
+        return el("section", { class: "card" }, [
+          eyebrow,
+          el("p", { class: "prompt", text: word.ko }),
+          el("p", { lang: "en", class: "word", text: word.en }),
+          el("p", { class: round.spellOk ? "ok" : "no", text: round.spellOk ? "철자가 맞아요." : "입력: " + round.spell }),
+          exampleBlock(word),
+          el("div", { class: "actions" }, [
+            listenButton(word),
+            el("button", { type: "button", class: "primary", text: "다음", click: () => grade(round.spellOk) })
+          ])
+        ]);
+      }
+
+      function hintText(en) {
+        const trimmed = en.trim();
+        if (trimmed.length < 2) return trimmed;
+        return trimmed[0] + " " + "·".repeat(Math.min(trimmed.length - 1, 14));
+      }
+
+      function renderEnd() {
+        const restart = el("button", {
+          type: "button",
+          class: "primary",
+          text: round.phase === "mastered" ? "복습하기" : "한 세트 더",
+          click: () => {
+            if (round.phase === "mastered") store.mix = true;
+            save();
+            buildRound();
+            render();
+          }
+        });
+        let title = "단어가 없습니다.";
+        let body = "아래에서 영어 단어와 뜻을 추가하세요.";
+        if (round.phase === "mastered") {
+          title = "이 묶음은 모두 외운 상태입니다.";
+          body = "외운 단어를 섞어 복습하거나, 표시를 지우고 다시 시작할 수 있습니다.";
+        } else if (round.phase === "done") {
+          title = "이번 세트를 마쳤습니다.";
+          body = round.answered + "번 중 " + round.correct + "번 알고 있었습니다.";
+        }
+        keys.textContent = "";
+        return el("section", { class: "card" }, [
+          el("h2", { class: "prompt", text: title }),
+          el("p", { class: "lead", text: body }),
+          el("div", { class: "actions" }, [restart])
+        ]);
+      }
+
+      function renderMine() {
+        const list = document.querySelector("#mine");
+        if (!store.custom.length) {
+          list.replaceChildren();
+          return;
+        }
+        list.replaceChildren(...store.custom.slice().reverse().map((word) => el("li", {}, [
+          el("span", { class: "wb-main" }, [
+            el("strong", { lang: "en", text: word.en }),
+            el("span", { class: "wb-ko", text: word.ko })
+          ]),
+            el("button", { type: "button", text: "발음", click: () => speak(word.en) }),
+          el("button", {
+            type: "button",
+            text: "삭제",
+            click: () => removeCustom(word)
+          })
+        ])));
+      }
+
+      function removeCustom(word) {
+        const showing = (round.phase === "ask" || round.phase === "reveal") && round.queue[round.index] === word.id;
+        store.custom = store.custom.filter((item) => item.id !== word.id);
+        delete store.known[word.id];
+        round.queue = round.queue.filter((id) => id !== word.id);
+        if (showing) {
+          round.picked = null;
+          round.hint = false;
+          round.spell = "";
+          round.phase = "ask";
+          if (round.index >= round.queue.length) round.phase = round.queue.length ? "done" : "empty";
+          else if (store.mode === "quiz") prepareChoices();
+        } else if ((round.phase === "ask" || round.phase === "reveal") && round.index >= round.queue.length) {
+          round.phase = round.queue.length ? "done" : "empty";
+        }
+        save();
+        setStatus(word.en + " 단어를 삭제했습니다.");
+        render();
+      }
+
+      function renderWordbook() {
+        const list = document.querySelector("#wordbook");
+        const words = wordsInDeck(store.deck).slice().sort((a, b) => a.en.localeCompare(b.en));
+        list.replaceChildren(...words.map((word) => {
+          const known = Boolean(store.known[word.id]);
+          return el("li", {}, [
+            el("span", { class: "wb-main" }, [
+              el("strong", { lang: "en", text: word.en }),
+              el("span", { class: "wb-ko", text: word.ko })
+            ]),
+            el("button", { type: "button", text: "발음", click: () => speak(word.en) }),
+            el("button", {
+              type: "button",
+              text: known ? "외움" : "학습 중",
+              "aria-pressed": String(known),
+              click: () => toggleKnown(word)
+            })
+          ]);
+        }));
+      }
+
+      function maybeSpeak() {
+        if (!store.voice) return;
+        const word = current();
+        if (!word) return;
+        const should = (store.mode === "card" && round.phase === "ask")
+          || (store.mode !== "card" && round.phase === "reveal");
+        if (!should) return;
+        const token = word.id + ":" + round.index + ":" + round.phase;
+        if (spokenFor === token) return;
+        spokenFor = token;
+        speak(word.en);
+      }
+
+      function render() {
+        renderBars();
+        renderMeter();
+        const active = document.activeElement;
+        const keepFocus = active && active.closest && active.closest(".panel");
+        stage.replaceChildren(renderStudy());
+        renderMine();
+        renderWordbook();
+        maybeSpeak();
+        if (keepFocus) return;
+        if (store.mode === "spell" && round.phase === "ask") {
+          const input = document.querySelector("#spell-input");
+          if (input) input.focus();
+        }
+      }
+
+      modeBox.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-mode]");
+        if (!button || button.dataset.mode === store.mode) return;
+        store.mode = button.dataset.mode;
+        save();
+        buildRound();
+        setStatus(button.textContent + " 학습입니다.");
+        render();
+      });
+
+      voiceBtn.addEventListener("click", () => {
+        store.voice = !store.voice;
+        if (!store.voice && window.speechSynthesis) speechSynthesis.cancel();
+        save();
+        setStatus(store.voice ? "발음 듣기를 켰습니다." : "발음 듣기를 껐습니다.");
+        render();
+      });
+
+      mixBtn.addEventListener("click", () => {
+        store.mix = !store.mix;
+        save();
+        buildRound();
+        setStatus(store.mix ? "외운 단어도 세트에 넣습니다." : "아직 모르는 단어만 나옵니다.");
+        render();
+      });
+
+      document.querySelector("#fresh").addEventListener("click", () => {
+        buildRound();
+        setStatus("새 세트를 만들었습니다.");
+        render();
+      });
+
+      document.querySelector("#clear").addEventListener("click", () => {
+        const words = wordsInDeck(store.deck);
+        if (!words.some((word) => store.known[word.id])) {
+          setStatus("이 묶음에는 외운 표시가 없습니다.");
+          return;
+        }
+        if (!window.confirm("이 묶음에서 외운 표시를 지울까요?")) return;
+        words.forEach((word) => delete store.known[word.id]);
+        save();
+        buildRound();
+        setStatus("이 묶음의 외운 표시를 지웠습니다.");
+        render();
+      });
+
+      document.querySelector("#add-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const en = document.querySelector("#add-en").value.trim().replace(/\s+/g, " ");
+        const ko = document.querySelector("#add-ko").value.trim();
+        const example = document.querySelector("#add-ex").value.trim();
+        if (!/^[A-Za-z][A-Za-z' -]{0,39}$/.test(en)) {
+          setStatus("영어 단어는 알파벳으로 입력해 주세요.");
+          return;
+        }
+        if (allWords().some((word) => norm(word.en) === norm(en))) {
+          setStatus("이미 있는 단어입니다.");
+          return;
+        }
+        if (!ko) {
+          setStatus("뜻을 입력해 주세요.");
+          return;
+        }
+        if (store.custom.length >= 100) {
+          setStatus("내 단어는 100개까지 저장됩니다.");
+          return;
+        }
+        store.custom.push({
+          id: "mine-" + Date.now(),
+          deck: "mine",
+          en,
+          ko,
+          pos: "내 단어",
+          example,
+          koExample: ""
+        });
+        save();
+        event.target.reset();
+        if (store.deck === "mine" || (store.deck === "all" && (round.phase === "empty" || round.phase === "mastered" || round.phase === "done"))) {
+          buildRound();
+        }
+        setStatus(en + " 단어를 추가했습니다. 내 단어 묶음에서 바로 학습할 수 있습니다.");
+        render();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        const tag = document.activeElement ? document.activeElement.tagName : "";
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (event.target.closest && event.target.closest("button") && (event.key === "Enter" || event.key === " ")) return;
+        const word = current();
+        if ((event.key === "l" || event.key === "L") && word && round.phase !== "done") {
+          speak(word.en);
+          return;
+        }
+        if (round.phase === "done" || round.phase === "mastered" || round.phase === "empty") return;
+        if (store.mode === "card" && round.phase === "ask" && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          revealCard();
+        } else if (store.mode === "card" && round.phase === "reveal" && event.key === "ArrowLeft") {
+          grade(false);
+        } else if (store.mode === "card" && round.phase === "reveal" && (event.key === "ArrowRight" || event.key === "Enter")) {
+          grade(true);
+        } else if (store.mode === "quiz" && round.phase === "ask" && ["1", "2", "3", "4"].includes(event.key)) {
+          const choice = round.choices[Number(event.key) - 1];
+          if (choice) pickChoice(choice.id);
+        } else if ((store.mode === "quiz" || store.mode === "spell") && round.phase === "reveal" && event.key === "Enter") {
+          const remembered = store.mode === "quiz" ? round.picked === word.id : round.spellOk;
+          grade(remembered);
+        }
+      });
+
+      if (window.speechSynthesis) {
+        speechSynthesis.getVoices();
+        speechSynthesis.addEventListener("voiceschanged", () => speechSynthesis.getVoices());
+      }
+
+      buildRound();
+      render();
+    </script>
+  </body>
+</html>
